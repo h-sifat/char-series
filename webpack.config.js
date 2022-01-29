@@ -21,6 +21,7 @@ module.exports = {
     filename: "index.js",
     globalObject: "this",
     library: {
+      name: "char_series",
       type: "umd",
       export: "default",
     },

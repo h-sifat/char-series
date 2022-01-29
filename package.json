@@ -1,7 +1,7 @@
 {
   "name": "char-series",
   "version": "1.0.0",
-  "description": "Just a simple function to generate an array of characters form the given range \"<from>..<to>\" e.g., ''.",
+  "description": "Just a simple function to generate an array of characters form the given range string.",
   "author": {
     "name": "Sifat Hossain",
     "email": "hsifat@protonmail.com",
