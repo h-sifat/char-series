@@ -1,53 +1,31 @@
-import { FirstArg } from "./interface";
+import { FirstArg, FromTo } from "./interface";
 import {
   is,
-  isValidSeriesArgObject,
-  getStringFromTaggedTemplate,
-  validateAndFormatRange,
+  processRangeString,
+  normalizeRangeObject,
+  processTaggedTemplate,
 } from "./util";
 
-const SERIES_STRING_LENGTH = 4; // e.g., "0..9"
-const LAST_INDEX_OF_SERIES_STRING = SERIES_STRING_LENGTH - 1;
-
 export default function series(firstArg: FirstArg, ...values: any[]): string[] {
-  let rangeStr: string;
+  let rangeObject: FromTo<number>;
 
-  if (is("string")(firstArg)) rangeStr = firstArg;
-  else if (firstArg && is("object")(firstArg)) {
-    if (Array.isArray(firstArg))
-      rangeStr = getStringFromTaggedTemplate(firstArg, values);
-    else if (isValidSeriesArgObject(firstArg))
-      rangeStr = `${firstArg.from}..${firstArg.to}`;
-    else throw new Error(`Invalid argument object`);
+  if (is("string")(firstArg))
+    rangeObject = normalizeRangeObject(processRangeString(firstArg));
+  else if (is("non_null_object")(firstArg)) {
+    if (!Array.isArray(firstArg)) rangeObject = normalizeRangeObject(firstArg);
+    else {
+      const rangeString = processTaggedTemplate(firstArg, values);
+      rangeObject = normalizeRangeObject(processRangeString(rangeString));
+    }
   } else throw new Error(`Invalid argument: "${firstArg}"`);
 
-  rangeStr = validateAndFormatRange(rangeStr);
-
-  const seriesArray = getSeries(
-    rangeStr.charAt(0),
-    rangeStr.charAt(LAST_INDEX_OF_SERIES_STRING)
-  );
-
-  return seriesArray;
+  return getSeries(rangeObject);
 }
 
-function getSeries(startChar: string, endChar: string) {
-  let startCharCode = startChar.charCodeAt(0);
-  let endCharCode = endChar.charCodeAt(0);
+function getSeries({ from, to }: FromTo<number>) {
+  const length = Math.abs(from - to) + 1;
 
-  if (startCharCode === endCharCode)
-    throw new Error(`Invalid series "${startChar}..${endChar}"`);
-
-  const seriesLength = Math.abs(startCharCode - endCharCode) + 1;
-
-  const charArray = new Array(seriesLength);
-
-  if (startCharCode > endCharCode)
-    for (let i = 0; i < seriesLength; i++)
-      charArray[i] = String.fromCharCode(startCharCode--);
-  else
-    for (let i = 0; i < seriesLength; i++)
-      charArray[i] = String.fromCharCode(startCharCode++);
-
-  return charArray;
+  return from > to
+    ? Array.from({ length }, () => String.fromCharCode(from--))
+    : Array.from({ length }, () => String.fromCharCode(from++));
 }
