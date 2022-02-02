@@ -1,10 +1,10 @@
 {
   "name": "char-series",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Just a simple function to generate an array of characters form the given range string.",
   "keywords": [
     "characters",
-    "brace-expansion",
+    "range-expansion",
     "character-range",
     "character-series"
   ],

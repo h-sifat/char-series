@@ -2,12 +2,13 @@
 import {
   is,
   MAX_CHAR_CODE,
-  processRangeString,
+  parseSeries,
   normalizeRangeObject,
   processTaggedTemplate,
+  splitConcatenatedSeries as scs,
 } from "../src/util";
 
-describe("processRangeString", () => {
+describe("parseSeries", () => {
   const testData = [
     { input: "a..c", output: { from: "a", to: "c" } },
     { input: "....", output: { from: ".", to: "." } },
@@ -29,7 +30,7 @@ describe("processRangeString", () => {
 
   it.each(testData)(`("$input") => $output`, ({ input, output }) => {
     if (!("reverse" in output)) output.reverse = false;
-    expect(processRangeString(input)).toEqual(output);
+    expect(parseSeries(input)).toEqual(output);
   });
 
   it(`throws error for invalid syntax`, () => {
@@ -50,7 +51,7 @@ describe("processRangeString", () => {
 
     for (const rangeStr of invalidRangeStrings)
       expect(() => {
-        processRangeString(rangeStr);
+        parseSeries(rangeStr);
       }).toThrow(Error);
   });
 });
@@ -68,6 +69,9 @@ describe("is(type)(value)", () => {
     { type: "positive_integer", value: 0, result: true },
     { type: "positive_integer", value: 123, result: true },
     { type: "positive_integer", value: -1, result: false },
+    { type: "number[]", value: "not_array", result: false },
+    { type: "number[]", value: [1, 2, "3"], result: false },
+    { type: "number[]", value: [1, 2, 3], result: true },
   ])(`is("$type")($value) === $result`, ({ type, value, result }) => {
     expect(is(type)(value)).toBe(result);
   });
@@ -124,6 +128,7 @@ describe("normalizeRangeObject", () => {
     null,
     { a: 1 },
     { char: "a" },
+    { char: "aasdf", after: 2 },
     { from: "a", to: "a" },
     { char: "a", before: 0 },
     { char: "a", after: -1 },
@@ -150,5 +155,28 @@ describe("processTaggedTemplate", () => {
     expect(func`a..${"b"}`).toBe("a..b");
     expect(func`${"a"}${"."}.${"b"}`).toBe("a..b");
     expect(func`${"a"}${"."}${"."}${"b"} `).toBe("a..b ");
+  });
+});
+
+describe("splitConcatenatedSeries", () => {
+  it.each([
+    { input: "a..b", output: ["a..b"] },
+    { input: "a../&", output: ["a..&"] },
+    { input: "a../&!r", output: ["a..&!r"] },
+    { input: "/&..b", output: ["&..b"] },
+    { input: "/&+5&5-/&&/&../&", output: ["&+5", "5-&", "&..&"] },
+    { input: "a..b&c..d", output: ["a..b", "c..d"] },
+    { input: "a../&!r&c..d", output: ["a..&!r", "c..d"] },
+    { input: "a..b/&c..d", output: ["a..b&c..d"] },
+    { input: "a..b/&c..//", output: ["a..b&c../"] },
+  ])(`("$input") => $output`, ({ input, output }) => {
+    expect(scs(input)).toEqual(output);
+  });
+
+  it.each(["a../", "a../a"])(`throws error for "%s"`, (input) => {
+    expect(() => {
+      const result = scs(input);
+      console.log(result);
+    }).toThrow(Error);
   });
 });

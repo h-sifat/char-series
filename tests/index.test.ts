@@ -35,6 +35,11 @@ describe("char-series", () => {
     "4-e",
     "2-c+2",
     "1-b+3",
+    "a..b&c..e",
+    [
+      { from: "a", to: "b" },
+      { from: "c", to: "e" },
+    ],
     { from: "a", to: "e" },
     { char: "a", after: 4 },
     { char: "e", before: 4 },

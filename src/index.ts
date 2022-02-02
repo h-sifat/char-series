@@ -1,25 +1,36 @@
 import { FirstArg, FromTo } from "./interface";
 import {
   is,
-  processRangeString,
+  parseSeries,
   normalizeRangeObject,
   processTaggedTemplate,
+  splitConcatenatedSeries,
 } from "./util";
 
 export default function series(firstArg: FirstArg, ...values: any[]): string[] {
-  let rangeObject: FromTo<number>;
+  if (!firstArg) throw new Error(`Invalid argument`);
 
-  if (is("string")(firstArg))
-    rangeObject = normalizeRangeObject(processRangeString(firstArg));
-  else if (is("non_null_object")(firstArg)) {
-    if (!Array.isArray(firstArg)) rangeObject = normalizeRangeObject(firstArg);
-    else {
-      const rangeString = processTaggedTemplate(firstArg, values);
-      rangeObject = normalizeRangeObject(processRangeString(rangeString));
-    }
-  } else throw new Error(`Invalid argument: "${firstArg}"`);
+  let rangeObjects: FromTo<number>[] = [];
 
-  return getSeries(rangeObject);
+  if (is("string")(firstArg) || is("string[]")(firstArg)) {
+    const seriesString = Array.isArray(firstArg)
+      ? processTaggedTemplate(firstArg, values)
+      : firstArg;
+
+    rangeObjects = splitConcatenatedSeries(seriesString)
+      .map(parseSeries)
+      .map(normalizeRangeObject);
+  } else if (is("non_null_object")(firstArg))
+    rangeObjects = is("non_null_object[]")(firstArg)
+      ? firstArg.map(normalizeRangeObject)
+      : [normalizeRangeObject(firstArg)];
+  else throw new Error(`Invalid argument: "${firstArg}"`);
+
+  let seriesArray: string[] = [];
+  for (const rangeObject of rangeObjects)
+    seriesArray = seriesArray.concat(getSeries(rangeObject));
+
+  return seriesArray;
 }
 
 function getSeries({ from, to }: FromTo<number>) {

@@ -15,6 +15,13 @@ export function processTaggedTemplate(strings: string[], values: any[]) {
 }
 
 export function is<T extends keyof AllTypes>(type: T) {
+  if (type.endsWith("[]")) {
+    const elementType = type.slice(0, -2) as keyof AllTypes;
+
+    return (arg: any): arg is AllTypes[T] =>
+      Array.isArray(arg) && arg.every(is(elementType));
+  }
+
   switch (type) {
     case "char":
       return (arg: any): arg is AllTypes[T] =>
@@ -69,7 +76,7 @@ const RANGE_STRING_PROCESSORS = [
     }),
   },
 ];
-export function processRangeString(rangeString: string): RangeObject {
+export function parseSeries(rangeString: string): RangeObject {
   let result: RegExpExecArray | null;
   for (const processor of RANGE_STRING_PROCESSORS)
     if ((result = processor.pattern.exec(rangeString)))
@@ -154,4 +161,46 @@ function assertIsPositiveInteger(
 function assertValidFromToCharRange(arg: any): asserts arg is FromToCharRange {
   if (!is("char")(arg.from) || !is("char")(arg.to) || arg.to === arg.from)
     throw new Error(`Invalid range object.`);
+}
+
+const DELIMITER = "&";
+const ESCAPE_FLAG = "/";
+export function splitConcatenatedSeries(seriesString: string): string[] {
+  const seriesArray: string[] = [];
+  seriesString += "&";
+
+  let currentSeries = "";
+  let wasPrevCharEscapeFlag = false;
+  for (let i = 0; i < seriesString.length; i++) {
+    const char = seriesString[i];
+
+    if (char === ESCAPE_FLAG) {
+      if (wasPrevCharEscapeFlag) {
+        currentSeries += ESCAPE_FLAG;
+        wasPrevCharEscapeFlag = false;
+      } else wasPrevCharEscapeFlag = true;
+      continue;
+    }
+
+    if (char !== DELIMITER) {
+      if (wasPrevCharEscapeFlag)
+        throw new Error(`Invalid escape sequence at index ${i - 1}.`);
+      currentSeries += char;
+      continue;
+    }
+
+    // now char is the DELIMITER
+    if (wasPrevCharEscapeFlag) {
+      if (i === seriesString.length - 1)
+        throw new Error(`Invalid escape sequence at index ${i - 1}.`);
+      currentSeries += DELIMITER;
+      wasPrevCharEscapeFlag = false;
+      continue;
+    }
+
+    seriesArray.push(currentSeries);
+    currentSeries = "";
+  }
+
+  return seriesArray;
 }

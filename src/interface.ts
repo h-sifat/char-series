@@ -14,9 +14,15 @@ export type RangeObject =
   | AfterCharRange // "e+5"
   | BeforeAndAfterCharRange; // "5-e+5"
 
+type RangeObjectsWithOptionalReverseProp = FilterKeys<
+  RangeObject,
+  "reverse"
+> & { reverse?: boolean };
+
 export type FirstArg =
   | TemplateStringsArray
-  | (FilterKeys<RangeObject, "reverse"> & { reverse?: boolean })
+  | RangeObjectsWithOptionalReverseProp
+  | RangeObjectsWithOptionalReverseProp[]
   | string;
 
 type FilterKeys<T, KeyToRemove extends keyof T> = {
@@ -33,4 +39,15 @@ export interface AllTypes {
   object: object | null;
   non_null_object: object;
   positive_integer: number;
+
+  // array types
+  "char[]": string[];
+  "string[]": string[];
+  "number[]": number[];
+  "symbol[]": Symbol[];
+  "boolean[]": boolean[];
+  "function[]": Function[];
+  "object[]": (object | null)[];
+  "non_null_object[]": object[];
+  "positive_integer[]": number[];
 }
