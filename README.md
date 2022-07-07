@@ -78,7 +78,7 @@ Un-Escaped and Incorrect | Escaped and Correct
 `"&..."` | `"/&..."`
 `"*../"` | `"*..//"`
 `"a..&&1..5"` | `"a../&&1..5"`
-`"a..&&1..5&a..c"` | `"a../&&1..5&a..c!r"` 
+`"a..&&1..5&a..c"` | `"a../&&1..5&a..c"` 
 
 
 ### Object Argument Type
